@@ -1,4 +1,4 @@
-# 📊 SPY 0DTE Options Analysis Dashboard
+# SPY 0DTE Options Analysis Dashboard
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-2.3+-green.svg)](https://flask.palletsprojects.com/)
