@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPY 0DTE Options Analysis Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    
+    <style>
+        .main-header {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1f77b4;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 0.5rem 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .alert-high {
+            background-color: #ffebee;
+            border-left: 5px solid #f44336;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+        }
+        .alert-medium {
+            background-color: #fff3e0;
+            border-left: 5px solid #ff9800;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+        }
+        .signal-active {
+            background-color: #e8f5e8;
+            border-left: 5px solid #4caf50;
+            padding: 0.75rem;
+            margin: 0.25rem 0;
+            border-radius: 5px;
+        }
+        .sidebar-card {
+            background-color: #e3f2fd;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .tab-content {
+            background: white;
+            border-radius: 0 0 10px 10px;
+            padding: 1.5rem;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #1f77b4;
+            color: white;
+            border-color: #1f77b4;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background-color: #4caf50; }
+        .status-warning { background-color: #ff9800; }
+        .status-error { background-color: #f44336; }
+        
+        .btn-analysis {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        .btn-analysis:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row">
+            <div class="col-12">
+                <h1 class="main-header">
+                    <i class="fas fa-chart-line"></i> SPY 0DTE Options Scalping Analysis Dashboard
+                </h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3">
+                <div class="sidebar-card">
+                    <h4><i class="fas fa-cog"></i> Analysis Configuration</h4>
+                    
+                    <div class="mb-3">
+                        <label for="usagePattern" class="form-label">Usage Pattern:</label>
+                        <select class="form-select" id="usagePattern">
+                            <option value="full">Full Analysis (Complete)</option>
+                            <option value="quick">Quick Check (5-day data)</option>
+                            <option value="intraday">Intraday Focus (1-day)</option>
+                            <option value="performance">Performance Review (30-day)</option>
+                            <option value="custom">Custom Configuration</option>
+                        </select>
+                    </div>
+
+                    <div id="customConfig" style="display: none;">
+                        <div class="mb-3">
+                            <label for="period" class="form-label">Period:</label>
+                            <select class="form-select" id="period">
+                                <option value="1d">1 Day</option>
+                                <option value="5d">5 Days</option>
+                                <option value="10d">10 Days</option>
+                                <option value="30d" selected>30 Days</option>
+                                <option value="60d">60 Days</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="interval" class="form-label">Interval:</label>
+                            <select class="form-select" id="interval">
+                                <option value="1m">1 Minute</option>
+                                <option value="5m" selected>5 Minutes</option>
+                                <option value="15m">15 Minutes</option>
+                                <option value="30m">30 Minutes</option>
+                                <option value="1h">1 Hour</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>Display Options</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showPerformance" checked>
+                            <label class="form-check-label" for="showPerformance">Show Performance Charts</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showMarketOverview" checked>
+                            <label class="form-check-label" for="showMarketOverview">Show Market Overview</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showHeatmap" checked>
+                            <label class="form-check-label" for="showHeatmap">Show Signals Heatmap</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoRefresh">
+                            <label class="form-check-label" for="autoRefresh">Auto-refresh (5 min)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="mockMode">
+                            <label class="form-check-label" for="mockMode">Use Mock Data (Testing)</label>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-analysis w-100 mb-3" onclick="runAnalysis()">
+                        <i class="fas fa-rocket"></i> Run Analysis
+                    </button>
+
+                    <button class="btn btn-outline-primary w-100 mb-2" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh Data
+                    </button>
+
+                    <button class="btn btn-outline-warning w-100 mb-2" onclick="enableMockMode()">
+                        <i class="fas fa-flask"></i> Test with Mock Data
+                    </button>
+
+                    <div id="lastUpdate" class="mt-3 text-muted small"></div>
+                </div>
+
+                <!-- Status Indicator -->
+                <div class="sidebar-card">
+                    <h6><i class="fas fa-info-circle"></i> System Status</h6>
+                    <div id="systemStatus">
+                        <span class="status-indicator status-warning"></span>
+                        <span>Ready to load data</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9">
+                <!-- Loading Spinner -->
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner-border spinner-border-lg text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading market data...</p>
+                </div>
+
+                <!-- Metrics Cards -->
+                <div class="row" id="metricsRow" style="display: none;">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="metric-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Data Points</h6>
+                                    <h3 class="mb-0" id="dataPoints">0</h3>
+                                    <small>SPY 5-min bars</small>
+                                </div>
+                                <i class="fas fa-database fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="metric-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Signal Types</h6>
+                                    <h3 class="mb-0" id="signalTypes">0</h3>
+                                    <small>Technical indicators</small>
+                                </div>
+                                <i class="fas fa-crosshairs fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="metric-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Active Signals</h6>
+                                    <h3 class="mb-0" id="activeSignals">0</h3>
+                                    <small>Currently triggering</small>
+                                </div>
+                                <i class="fas fa-bell fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="metric-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Features</h6>
+                                    <h3 class="mb-0" id="features">0</h3>
+                                    <small>Calculated indicators</small>
+                                </div>
+                                <i class="fas fa-chart-area fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trading Alerts -->
+                <div class="chart-container" id="alertsContainer" style="display: none;">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Current Trading Alerts</h4>
+                    <div id="alertsList">
+                        <div class="text-muted">No trading alerts at this time</div>
+                    </div>
+                </div>
+
+                <!-- Active Signals Summary -->
+                <div class="chart-container" id="signalsContainer" style="display: none;">
+                    <h4><i class="fas fa-bullseye"></i> Active Signals Summary</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Currently Active:</h6>
+                            <div id="activeSignalsList">
+                                <div class="text-muted">No signals currently active</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="signalStrengthGauge"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Analysis -->
+                <div class="chart-container" id="performanceContainer" style="display: none;">
+                    <h4><i class="fas fa-chart-bar"></i> Signal Performance Analysis</h4>
+                    
+                    <ul class="nav nav-tabs" id="performanceTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="winrates-tab" data-bs-toggle="tab" data-bs-target="#winrates" type="button" role="tab">
+                                Win Rates
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="table-tab" data-bs-toggle="tab" data-bs-target="#table" type="button" role="tab">
+                                Performance Table
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="statistics-tab" data-bs-toggle="tab" data-bs-target="#statistics" type="button" role="tab">
+                                Statistics
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="performanceTabContent">
+                        <div class="tab-pane fade show active" id="winrates" role="tabpanel">
+                            <div id="performanceChart"></div>
+                        </div>
+                        <div class="tab-pane fade" id="table" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="performanceTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Signal</th>
+                                            <th>Win Rate</th>
+                                            <th>Sharpe Ratio</th>
+                                            <th>Count</th>
+                                            <th>Excess Return</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="statistics" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Average Win Rate</h5>
+                                            <h3 class="text-primary" id="avgWinRate">-</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Best Signal</h5>
+                                            <h3 class="text-success" id="bestSignal">-</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Total Signal Events</h5>
+                                            <h3 class="text-info" id="totalSignals">-</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Overview -->
+                <div class="chart-container" id="marketOverviewContainer" style="display: none;">
+                    <h4><i class="fas fa-chart-line"></i> Market Overview</h4>
+                    <div id="marketOverviewChart"></div>
+                </div>
+
+                <!-- Signals Heatmap -->
+                <div class="chart-container" id="heatmapContainer" style="display: none;">
+                    <h4><i class="fas fa-fire"></i> Signal Activity Heatmap</h4>
+                    <div id="signalsHeatmap"></div>
+                </div>
+
+                <!-- Export Options -->
+                <div class="chart-container" id="exportContainer" style="display: none;">
+                    <h4><i class="fas fa-download"></i> Export Data</h4>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button class="btn btn-success w-100" onclick="exportToExcel()">
+                                <i class="fas fa-file-excel"></i> Export to Excel
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-info w-100" onclick="copySignals()">
+                                <i class="fas fa-copy"></i> Copy Signals
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-warning w-100" onclick="copyAlerts()">
+                                <i class="fas fa-exclamation-circle"></i> Copy Alerts
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Summary -->
+                <div class="chart-container" id="summaryContainer" style="display: none;">
+                    <h4><i class="fas fa-clipboard-list"></i> Daily Summary</h4>
+                    <div class="accordion" id="summaryAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="summaryHeading">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#summaryCollapse">
+                                    View Detailed Summary
+                                </button>
+                            </h2>
+                            <div id="summaryCollapse" class="accordion-collapse collapse" data-bs-parent="#summaryAccordion">
+                                <div class="accordion-body">
+                                    <pre id="summaryText" class="bg-light p-3 rounded"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copy Modal -->
+    <div class="modal fade" id="copyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="copyModalTitle">Copy Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control" id="copyText" rows="10" readonly></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="copyToClipboard()">
+                        <i class="fas fa-copy"></i> Copy to Clipboard
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let autoRefreshInterval = null;
+        let currentData = {};
+
+        // Configuration based on usage pattern
+        function updateConfiguration() {
+            const pattern = document.getElementById('usagePattern').value;
+            const customConfig = document.getElementById('customConfig');
+            const period = document.getElementById('period');
+            const interval = document.getElementById('interval');
+
+            if (pattern === 'custom') {
+                customConfig.style.display = 'block';
+            } else {
+                customConfig.style.display = 'none';
+                
+                switch(pattern) {
+                    case 'quick':
+                        period.value = '5d';
+                        interval.value = '5m';
+                        break;
+                    case 'intraday':
+                        period.value = '1d';
+                        interval.value = '1m';
+                        break;
+                    case 'performance':
+                        period.value = '30d';
+                        interval.value = '5m';
+                        break;
+                    default: // full
+                        period.value = '30d';
+                        interval.value = '5m';
+                }
+            }
+        }
+
+        // Event listeners
+        document.getElementById('usagePattern').addEventListener('change', updateConfiguration);
+        document.getElementById('autoRefresh').addEventListener('change', function() {
+            if (this.checked) {
+                autoRefreshInterval = setInterval(refreshData, 300000); // 5 minutes
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
+        });
+
+        // Main functions
+        async function runAnalysis() {
+            showLoading(true);
+            updateSystemStatus('warning', 'Loading market data...');
+            
+            const period = document.getElementById('period').value;
+            const interval = document.getElementById('interval').value;
+            const mockMode = document.getElementById('mockMode') ? document.getElementById('mockMode').checked : false;
+            
+            const url = `/api/load_data?period=${period}&interval=${interval}${mockMode ? '&mock=true' : ''}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const status = data.metrics.mock_mode ? 'Mock data loaded successfully' : 'Live data loaded successfully';
+                    updateSystemStatus('success', status);
+                    updateMetrics(data.metrics);
+                    showDataContainers(true);
+                    await loadAllData();
+                } else {
+                    updateSystemStatus('error', data.message);
+                    // Offer to try mock data if real data fails
+                    if (!mockMode) {
+                        const useMock = confirm('Real data failed to load. Would you like to try with mock data for testing?');
+                        if (useMock) {
+                            await enableMockMode();
+                        }
+                    }
+                }
+            } catch (error) {
+                updateSystemStatus('error', 'Error loading data: ' + error.message);
+                console.error('Load data error:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function enableMockMode() {
+            showLoading(true);
+            updateSystemStatus('warning', 'Loading mock data for testing...');
+            
+            try {
+                const response = await fetch('/api/mock_data');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateSystemStatus('success', 'Mock data loaded - Testing mode active');
+                    // Reload metrics
+                    await runAnalysis();
+                } else {
+                    updateSystemStatus('error', 'Failed to load mock data');
+                }
+            } catch (error) {
+                updateSystemStatus('error', 'Error loading mock data: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function refreshData() {
+            await runAnalysis();
+        }
+
+        async function loadAllData() {
+            // Load alerts
+            await loadAlerts();
+            
+            // Load active signals
+            await loadActiveSignals();
+            
+            // Load charts based on display options
+            if (document.getElementById('showPerformance').checked) {
+                await loadPerformanceData();
+            }
+            
+            if (document.getElementById('showMarketOverview').checked) {
+                await loadMarketOverview();
+            }
+            
+            if (document.getElementById('showHeatmap').checked) {
+                await loadSignalsHeatmap();
+            }
+            
+            // Load summary
+            await loadSummary();
+        }
+
+        async function loadAlerts() {
+            try {
+                const response = await fetch('/api/alerts');
+                const data = await response.json();
+                displayAlerts(data.alerts);
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+            }
+        }
+
+        async function loadActiveSignals() {
+            try {
+                const response = await fetch('/api/active_signals');
+                const data = await response.json();
+                displayActiveSignals(data.active_signals);
+                
+                // Load signal strength gauge
+                const gaugeResponse = await fetch('/api/charts/signal_gauge');
+                const gaugeData = await gaugeResponse.json();
+                if (gaugeData.chart) {
+                    Plotly.newPlot('signalStrengthGauge', JSON.parse(gaugeData.chart).data, JSON.parse(gaugeData.chart).layout);
+                }
+            } catch (error) {
+                console.error('Error loading active signals:', error);
+            }
+        }
+
+        async function loadPerformanceData() {
+            try {
+                // Load performance chart
+                const chartResponse = await fetch('/api/charts/performance');
+                const chartData = await chartResponse.json();
+                if (chartData.chart) {
+                    const fig = JSON.parse(chartData.chart);
+                    Plotly.newPlot('performanceChart', fig.data, fig.layout);
+                }
+                
+                // Load performance table
+                const tableResponse = await fetch('/api/performance_table');
+                const tableData = await tableResponse.json();
+                displayPerformanceTable(tableData.data);
+                
+                // Load performance stats
+                const statsResponse = await fetch('/api/performance_stats');
+                const statsData = await statsResponse.json();
+                displayPerformanceStats(statsData.stats);
+                
+            } catch (error) {
+                console.error('Error loading performance data:', error);
+            }
+        }
+
+        async function loadMarketOverview() {
+            try {
+                const response = await fetch('/api/charts/market_overview');
+                const data = await response.json();
+                if (data.chart) {
+                    const fig = JSON.parse(data.chart);
+                    Plotly.newPlot('marketOverviewChart', fig.data, fig.layout);
+                }
+            } catch (error) {
+                console.error('Error loading market overview:', error);
+            }
+        }
+
+        async function loadSignalsHeatmap() {
+            try {
+                const response = await fetch('/api/charts/heatmap');
+                const data = await response.json();
+                if (data.chart) {
+                    const fig = JSON.parse(data.chart);
+                    Plotly.newPlot('signalsHeatmap', fig.data, fig.layout);
+                }
+            } catch (error) {
+                console.error('Error loading signals heatmap:', error);
+            }
+        }
+
+        async function loadSummary() {
+            try {
+                const response = await fetch('/api/summary');
+                const data = await response.json();
+                displaySummary(data.summary);
+            } catch (error) {
+                console.error('Error loading summary:', error);
+            }
+        }
+
+        // Display functions
+        function showLoading(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+
+        function showDataContainers(show) {
+            const containers = ['metricsRow', 'alertsContainer', 'signalsContainer', 
+                              'performanceContainer', 'marketOverviewContainer', 'heatmapContainer', 
+                              'exportContainer', 'summaryContainer'];
+            
+            containers.forEach(id => {
+                document.getElementById(id).style.display = show ? 'block' : 'none';
+            });
+        }
+
+        function updateSystemStatus(type, message) {
+            const statusDiv = document.getElementById('systemStatus');
+            const indicator = statusDiv.querySelector('.status-indicator');
+            const text = statusDiv.querySelector('span:last-child');
+            
+            indicator.className = `status-indicator status-${type}`;
+            text.textContent = message;
+        }
+
+        function updateMetrics(metrics) {
+            document.getElementById('dataPoints').textContent = metrics.data_points.toLocaleString();
+            document.getElementById('signalTypes').textContent = metrics.signal_types;
+            document.getElementById('activeSignals').textContent = metrics.active_signals;
+            document.getElementById('features').textContent = metrics.features;
+            
+            const updateText = `<strong>Last Update:</strong> ${metrics.last_update}`;
+            const modeText = metrics.mock_mode ? ' <span class="badge bg-warning">Mock Mode</span>' : ' <span class="badge bg-success">Live Data</span>';
+            document.getElementById('lastUpdate').innerHTML = updateText + modeText;
+        }
+
+        function displayAlerts(alerts) {
+            const container = document.getElementById('alertsList');
+            
+            if (!alerts || alerts.length === 0) {
+                container.innerHTML = '<div class="text-muted">No trading alerts at this time</div>';
+                return;
+            }
+            
+            let html = '';
+            alerts.forEach(alert => {
+                const alertClass = alert.priority === 'HIGH' ? 'alert-high' : 'alert-medium';
+                html += `
+                    <div class="${alertClass}">
+                        <strong>[${alert.priority}] ${alert.type}</strong><br>
+                        <strong>Signal:</strong> ${alert.message}<br>
+                        <strong>Action:</strong> ${alert.action}<br>
+                        <strong>Timeframe:</strong> ${alert.timeframe} | <strong>Confidence:</strong> ${alert.confidence}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            currentData.alerts = alerts;
+        }
+
+        function displayActiveSignals(signals) {
+            const container = document.getElementById('activeSignalsList');
+            
+            if (!signals || signals.length === 0) {
+                container.innerHTML = '<div class="text-muted">No signals currently active</div>';
+                return;
+            }
+            
+            let html = '';
+            signals.forEach(signal => {
+                html += `
+                    <div class="signal-active">
+                        ✅ <strong>${signal.name}</strong>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            currentData.signals = signals;
+        }
+
+        function displayPerformanceTable(data) {
+            const tbody = document.querySelector('#performanceTable tbody');
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No performance data available</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            data.forEach(row => {
+                html += `
+                    <tr>
+                        <td>${row.index || row.signal || '-'}</td>
+                        <td>${row.win_rate || '-'}</td>
+                        <td>${row.signal_sharpe || '-'}</td>
+                        <td>${row.count || '-'}</td>
+                        <td>${row.excess_return || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        function displayPerformanceStats(stats) {
+            document.getElementById('avgWinRate').textContent = stats.avg_win_rate || '-';
+            document.getElementById('bestSignal').textContent = stats.best_signal || '-';
+            document.getElementById('totalSignals').textContent = stats.total_signals || '-';
+        }
+
+        function displaySummary(summary) {
+            if (!summary) return;
+            
+            let summaryText = `SPY 0DTE Analysis Summary
+Date: ${summary.date}
+
+Market Data:
+- SPY Data Points: ${summary.data_points.toLocaleString()}
+- Analysis Period: Market data loaded
+- Data Interval: 5-minute intervals
+
+Signal Analysis:
+- Total Signal Types: ${summary.signal_types}
+- Currently Active: ${summary.active_signals}
+- Features Calculated: ${summary.features_calculated}
+
+Current Alerts: ${summary.current_alerts}`;
+
+            if (summary.best_signal) {
+                summaryText += `
+
+Performance Highlights:
+- Best Performing Signal: ${summary.best_signal.name}
+- Win Rate: ${summary.best_signal.win_rate}
+- Sharpe Ratio: ${summary.best_signal.sharpe_ratio}`;
+            }
+            
+            document.getElementById('summaryText').textContent = summaryText;
+        }
+
+        // Export functions
+        async function exportToExcel() {
+            try {
+                const response = await fetch('/api/export/excel');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `spy_analysis_${new Date().toISOString().slice(0,10)}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('Error exporting to Excel');
+                }
+            } catch (error) {
+                alert('Error exporting to Excel: ' + error.message);
+            }
+        }
+
+        function copySignals() {
+            if (!currentData.signals || currentData.signals.length === 0) {
+                alert('No active signals to copy');
+                return;
+            }
+            
+            let text = 'Current Active Signals:\n';
+            currentData.signals.forEach(signal => {
+                text += `- ${signal.name}\n`;
+            });
+            
+            showCopyModal('Copy Signals', text);
+        }
+
+        function copyAlerts() {
+            if (!currentData.alerts || currentData.alerts.length === 0) {
+                alert('No alerts to copy');
+                return;
+            }
+            
+            let text = 'Current Trading Alerts:\n';
+            currentData.alerts.forEach(alert => {
+                text += `[${alert.priority}] ${alert.message}\n`;
+            });
+            
+            showCopyModal('Copy Alerts', text);
+        }
+
+        function showCopyModal(title, text) {
+            document.getElementById('copyModalTitle').textContent = title;
+            document.getElementById('copyText').value = text;
+            new bootstrap.Modal(document.getElementById('copyModal')).show();
+        }
+
+        function copyToClipboard() {
+            const textArea = document.getElementById('copyText');
+            textArea.select();
+            document.execCommand('copy');
+            
+            // Show success feedback
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-primary');
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.add('btn-primary');
+                button.classList.remove('btn-success');
+            }, 2000);
+        }
+
+        // Initialize configuration on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConfiguration();
+        });
+    </script>
+</body>
+</html>
