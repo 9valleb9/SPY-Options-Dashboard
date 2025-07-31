@@ -393,7 +393,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Current Version**: v1.0.0
 - **Development Status**: Active
-- **Last Updated**: January 2025
+- **Last Updated**: July 2025
 - **Python Support**: 3.8+
 - **Tested Platforms**: Windows, macOS, Linux
 
