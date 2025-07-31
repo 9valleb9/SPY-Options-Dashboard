@@ -32,6 +32,10 @@ A  web-based dashboard for analyzing SPY 0DTE (zero days to expiration) options 
 - **API Endpoints**: RESTful API for integration with other systems
 - **Copy Functions**: Quick copy of signals and alerts for trading platforms
 
+![Dashboard View](screenshots/mainpage1.png)
+![Dashboard_View](screenshots/mainpage2.png)
+
+
 ## Quick Start
 
 ### Prerequisites
