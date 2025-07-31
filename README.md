@@ -87,11 +87,8 @@ SPY-Options-Dashboard/
 ├── requirements.txt                # Python dependencies
 ├── templates/
 │   └── index.html                  # Main dashboard template
-├── static/                         # Static assets (auto-created)
 ├── screenshots/                    # Dashboard screenshots
 ├── docs/                          # Additional documentation
-├── tests/                         # Unit tests
-├── CONTRIBUTING.md                # Contribution guidelines
 ├── LICENSE                        # MIT License
 └── README.md                      # This file
 ```
