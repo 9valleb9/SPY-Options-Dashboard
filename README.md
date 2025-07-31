@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-A professional web-based dashboard for analyzing SPY 0DTE (zero days to expiration) options trading signals. This application provides real-time market analysis, technical indicators, and trading alerts specifically designed for intraday options scalping strategies.
+A  web-based dashboard for analyzing SPY 0DTE (zero days to expiration) options trading signals. This application provides real-time market analysis, technical indicators, and trading alerts specifically designed for intraday options scalping strategies for educational purposes only.
 
 ##  Features
 
