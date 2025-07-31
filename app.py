@@ -533,7 +533,7 @@ def create_signals_heatmap(signals):
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 def create_market_overview(analyzer):
-    """Create market overview charts"""
+    """Create market overview charts with signal trigger points"""
     if not hasattr(analyzer, 'data') or 'SPY' not in analyzer.data:
         return None
     
@@ -550,7 +550,7 @@ def create_market_overview(analyzer):
     # Create subplots
     fig = make_subplots(
         rows=3, cols=1,
-        subplot_titles=['SPY Price', 'Volume', 'RSI'],
+        subplot_titles=['SPY Price Action with Signal Triggers', 'Volume', 'RSI with Signal Levels'],
         vertical_spacing=0.08,
         row_heights=[0.5, 0.25, 0.25]
     )
@@ -558,31 +558,157 @@ def create_market_overview(analyzer):
     # Price chart
     fig.add_trace(
         go.Scatter(x=spy_data.index, y=spy_data[close_col], 
-                  name='SPY Close', line=dict(color='blue')),
+                  name='SPY Close', line=dict(color='#2E86AB', width=2)),
         row=1, col=1
     )
+    
+    # Add signal trigger points if available
+    if hasattr(analyzer, 'features') and 'SPY' in analyzer.features and 'signals' in analyzer.features['SPY']:
+        signals = analyzer.features['SPY']['signals']
+        spy_close = spy_data[close_col]
+        
+        # Add buy signals (green triangles up)
+        buy_signals = ['rsi_oversold', 'bb_mean_revert_bull', 'macd_bullish', 'scalp_long']
+        for signal_name in buy_signals:
+            if signal_name in signals.columns:
+                signal_points = signals[signals[signal_name] == 1]
+                if not signal_points.empty:
+                    # Get corresponding prices
+                    signal_prices = spy_close.reindex(signal_points.index)
+                    fig.add_trace(
+                        go.Scatter(
+                            x=signal_points.index,
+                            y=signal_prices,
+                            mode='markers',
+                            name=f'Buy: {signal_name.replace("_", " ").title()}',
+                            marker=dict(
+                                symbol='triangle-up',
+                                size=8,
+                                color='#27AE60',
+                                line=dict(width=1, color='white')
+                            ),
+                            showlegend=True
+                        ),
+                        row=1, col=1
+                    )
+        
+        # Add sell signals (red triangles down)
+        sell_signals = ['rsi_overbought', 'bb_mean_revert_bear', 'macd_bearish', 'scalp_short']
+        for signal_name in sell_signals:
+            if signal_name in signals.columns:
+                signal_points = signals[signals[signal_name] == 1]
+                if not signal_points.empty:
+                    # Get corresponding prices
+                    signal_prices = spy_close.reindex(signal_points.index)
+                    fig.add_trace(
+                        go.Scatter(
+                            x=signal_points.index,
+                            y=signal_prices,
+                            mode='markers',
+                            name=f'Sell: {signal_name.replace("_", " ").title()}',
+                            marker=dict(
+                                symbol='triangle-down',
+                                size=8,
+                                color='#E74C3C',
+                                line=dict(width=1, color='white')
+                            ),
+                            showlegend=True
+                        ),
+                        row=1, col=1
+                    )
+        
+        # Add high-conviction signals (larger markers)
+        if 'scalp_long' in signals.columns:
+            scalp_long_points = signals[signals['scalp_long'] == 1]
+            if not scalp_long_points.empty:
+                signal_prices = spy_close.reindex(scalp_long_points.index)
+                fig.add_trace(
+                    go.Scatter(
+                        x=scalp_long_points.index,
+                        y=signal_prices,
+                        mode='markers',
+                        name='HIGH CONVICTION LONG',
+                        marker=dict(
+                            symbol='star',
+                            size=12,
+                            color='#F39C12',
+                            line=dict(width=2, color='white')
+                        ),
+                        showlegend=True
+                    ),
+                    row=1, col=1
+                )
+        
+        if 'scalp_short' in signals.columns:
+            scalp_short_points = signals[signals['scalp_short'] == 1]
+            if not scalp_short_points.empty:
+                signal_prices = spy_close.reindex(scalp_short_points.index)
+                fig.add_trace(
+                    go.Scatter(
+                        x=scalp_short_points.index,
+                        y=signal_prices,
+                        mode='markers',
+                        name='HIGH CONVICTION SHORT',
+                        marker=dict(
+                            symbol='star',
+                            size=12,
+                            color='#8E44AD',
+                            line=dict(width=2, color='white')
+                        ),
+                        showlegend=True
+                    ),
+                    row=1, col=1
+                )
     
     # Volume chart
     fig.add_trace(
         go.Bar(x=spy_data.index, y=spy_data[volume_col], 
-               name='Volume', marker_color='lightblue', opacity=0.7),
+               name='Volume', marker_color='rgba(46, 134, 171, 0.6)'),
         row=2, col=1
     )
     
-    # RSI chart
+    # RSI chart with signal levels
     if hasattr(analyzer, 'features') and 'SPY' in analyzer.features and 'rsi' in analyzer.features['SPY']:
         rsi_data = analyzer.features['SPY']['rsi']
         fig.add_trace(
             go.Scatter(x=rsi_data.index, y=rsi_data, 
-                      name='RSI', line=dict(color='purple')),
+                      name='RSI', line=dict(color='#9B59B6', width=2)),
             row=3, col=1
         )
         
-        # Add RSI levels
-        fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1)
-        fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1)
+        # Add RSI trigger levels
+        fig.add_hline(y=70, line_dash="dash", line_color="#E74C3C", 
+                     annotation_text="Overbought (70)", row=3, col=1)
+        fig.add_hline(y=30, line_dash="dash", line_color="#27AE60", 
+                     annotation_text="Oversold (30)", row=3, col=1)
+        fig.add_hline(y=50, line_dash="dot", line_color="#7F8C8D", 
+                     annotation_text="Neutral (50)", row=3, col=1)
+        
+        # Highlight RSI extreme zones
+        fig.add_hrect(y0=70, y1=100, fillcolor="rgba(231, 76, 60, 0.1)", 
+                     layer="below", line_width=0, row=3, col=1)
+        fig.add_hrect(y0=0, y1=30, fillcolor="rgba(39, 174, 96, 0.1)", 
+                     layer="below", line_width=0, row=3, col=1)
     
-    fig.update_layout(height=800, showlegend=False, title_text="Market Overview")
+    # Update layout
+    fig.update_layout(
+        height=800, 
+        showlegend=True,
+        title_text="Live Market Analysis with Signal Triggers",
+        title_font_size=16,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+    
+    # Update x-axes
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128, 128, 128, 0.2)')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128, 128, 128, 0.2)')
+    
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 def create_signal_strength_gauge(signals):
