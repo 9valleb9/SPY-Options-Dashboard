@@ -43,8 +43,8 @@ A  web-based dashboard for analyzing SPY 0DTE (zero days to expiration) options 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/spy-0dte-dashboard.git
-   cd spy-0dte-dashboard
+   git clone https://github.com/9valleb9/SPY-Options-Dashboard.git
+   cd SPY-Options-Dashboard
    ```
 
 2. **Set up virtual environment (recommended)**
@@ -76,7 +76,7 @@ A  web-based dashboard for analyzing SPY 0DTE (zero days to expiration) options 
 ## 📁 Project Structure
 
 ```
-spy-0dte-dashboard/
+SPY-Options-Dashboard/
 ├── app.py                          # Main Flask application
 ├── spy_0dte_options_analysis.py    # Core analysis framework
 ├── run.py                          # Application runner script
@@ -92,7 +92,7 @@ spy-0dte-dashboard/
 └── README.md                      # This file
 ```
 
-## 🎛️ Usage
+## Usage
 
 ### Configuration Options
 
